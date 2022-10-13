@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+    environment{
+        registryCredential = 'ecr:regioncode:CredentialIDinJenkins'
+        appRegistry = 'REGISTRYUrl/registryName'
+        vprofileRegistry = 'REGISTRYUrl'
+    }
+    stages{
+        stage('Fetch Code'){
+            steps{
+                git branch: 'docker', url: 'https://github.com/devopshydclub/vprofile-project.git'
+            }
+        }
+        stage('Test'){
+            steps{
+                sh 'mvn test'
+            }
+        }
+        stage('Code analysis with checkstyle'){
+            steps{
+                sh 'mvn checkstyle:checkstyle'
+            }
+            post {
+                success{
+                    echo 'Generated analysis results'
+                }
+            }
+        }
+        stage('Build and sonarqube analysis'){
+            environment{
+                scannerHome: tool 'sonar4.7'
+            }
+            steps{
+                withSonarQubeEnv('sona'){
+                    sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
+                    -Dsonar.projectName=vprofile-repo \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sourece=src/ \
+                    -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest \
+                    -Dsonar.junit.reportsPath=target/surefire-reports \
+                    -Dsonar.jcoco.reportsPath=target/jcoco.exec \
+                    -Dsonar.checkstyle.reportPaths=target/checstyle-result.xml'''
+                }
+            }
+        }
+        stage('Quality Gate'){
+            steps{
+                timeout(time: 1, unit: 'HOURS'){
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('Build App Image'){
+            steps{
+                script{
+                    dockerImage=docker.build(appRegistry+":${env.BUILD_NUMBER}", "./Docker-files/app/multistage/")
+                }
+            }
+        }
+        stage('Upload App Image'){
+            steps{
+                script{
+                    docker.withRegistry(vprofileRegistry, registryCredential){
+                        dockerImage.push("${env.BUILD_NUMBER}")
+                        dockerImage.push("latest")
+                    }
+                }
+            }
+        }
+    }
+}
