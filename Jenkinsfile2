@@ -1,9 +1,13 @@
 pipeline {
     agent any
+    tools{
+        maven "Maven3"
+        jdk "OracleJDK8"
+    }
     environment{
-        registryCredential = 'ecr:regioncode:CredentialIDinJenkins'
-        appRegistry = 'REGISTRYUrl/registryName'
-        vprofileRegistry = 'REGISTRYUrl'
+        registryCredential = 'ecr:us-east-1:awscreds'
+        appRegistry = '128029195320.dkr.ecr.us-east-1.amazonaws.com/vprofileimg'
+        vprofileRegistry = 'https://128029195320.dkr.ecr.us-east-1.amazonaws.com'
     }
     stages{
         stage('Fetch Code'){
@@ -28,17 +32,17 @@ pipeline {
         }
         stage('Build and sonarqube analysis'){
             environment{
-                scannerHome: tool 'sonar4.7'
+                scannerHome= tool 'sonar4.7'
             }
             steps{
-                withSonarQubeEnv('sona'){
+                withSonarQubeEnv('sonar'){
                     sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                    -Dsonar.projectName=vprofile-repo \
+                    -Dsonar.projectName=vprofile-repo-docker \
                     -Dsonar.projectVersion=1.0 \
                     -Dsonar.sourece=src/ \
                     -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest \
                     -Dsonar.junit.reportsPath=target/surefire-reports \
-                    -Dsonar.jcoco.reportsPath=target/jcoco.exec \
+                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                     -Dsonar.checkstyle.reportPaths=target/checstyle-result.xml'''
                 }
             }

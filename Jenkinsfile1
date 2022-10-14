@@ -59,7 +59,7 @@ pipeline{
 
         stage('Quality gate'){
             steps{
-                timeout(time:1 , unit: 'HOURS'){
+                timeout(time: 1 , unit: 'HOURS'){
                     // Parameter indicates whther to set pipeline to unstable if the quality gate fails
                     // true indicates set pipeline to unstable and false indicates don't do the same
                     waitForQualityGate abortPipeline: true
@@ -72,7 +72,7 @@ pipeline{
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: '52.87.253.75:8081',
+                    nexusUrl: '54.227.90.179:8081',
                     groupId: 'QA',
                     version: "${env.BUILD_ID}-${env.BUILD_TIMESTAMP}",
                     repository: 'vprofile-repository',
